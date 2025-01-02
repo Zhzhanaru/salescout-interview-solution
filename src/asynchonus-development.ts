@@ -11,6 +11,8 @@
 // { data: { ... }, status: 200 },
 // { data: { ... }, status: 200 }
 // ] 
+import axios from "axios";
+
 type RequestsResult = {
     data: any,
     status: number
@@ -18,7 +20,30 @@ type RequestsResult = {
 
 async function fetchAll(urls: string[]): Promise<RequestsResult[]> {
     //Your code goes here
-    return [];
+    const requests = urls.map(url => 
+        axios.get(url)
+            .then(response => ({
+                data: response.data,
+                status: response.status
+            }))
+            .catch(error => ({
+                data: error.response ? error.response.data : null,
+                status: error.response ? error.response.status : 500
+            }))
+    );
+    const results = await Promise.allSettled(requests);
+
+    // Filter out fulfilled results and return them
+    return results.map(result => {
+        if (result.status === 'fulfilled') {
+            return result.value; // Return the fulfilled value
+        } else {
+            return {
+                data: null,
+                status: 500 // You can customize this based on your error handling
+            };
+        }
+    });
 }
 
 module.exports = { fetchAll };
